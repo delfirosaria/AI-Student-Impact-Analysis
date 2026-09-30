@@ -28,6 +28,10 @@ Project ini mencakup:
 ## Files
 - `AI-Student-Impact-Analysis.Rmd` — source code dan dokumentasi analisis.
 - `AI-Student-Impact-Analysis.html` — laporan hasil analisis.
-- `Ai_student_impact_dataset.xlsx` — dataset yang digunakan.
+- `Ai_student_impact_dataset .xlsx` — dataset yang digunakan.
+## Full Analysis
+Laporan lengkap analisis dapat dilihat pada:
+- [R Markdown Source](./AI-Student-Impact-Analysis.Rmd)
+- [HTML Report](./AI-Student-Impact-Analysis.html)
 ## Conclusion
 Hasil analisis menunjukkan bahwa penggunaan AI lebih terlihat berkaitan dengan retensi pengetahuan dan risiko burnout dibandingkan dengan perbedaan performa akademik.
