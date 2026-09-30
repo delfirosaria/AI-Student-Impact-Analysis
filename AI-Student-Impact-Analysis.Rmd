@@ -1,0 +1,525 @@
+---
+title: "AI Impact on Students"
+author: "Delfi Rosaria Simanjuntak"
+date: "2026-09-30"
+output: html_document
+---
+
+
+# AI Impact on Students
+## Academic Performance & Well-being Analysis
+
+
+## Project Overview
+This project analyzes the relationship between generative AI usage, academic performance, learning behavior, and student well-being.
+
+## The analysis covers:
+- Pemahaman Bisnis
+- Data understanding and profiling (Pemahaman dan Profiling Data)
+- Data cleaning and validation (Validasi dan Pembersihan Data)
+- Exploratory data analysis (Exploratory Data Analysis (EDA))
+- Statistical analysis
+- Student segmentation (Analisis dan Segmentasi)
+- Data-driven insights (Temuan dan Kesimpulan)
+
+
+# ============================================================
+# 1. PEMAHAMAN BISNIS
+# ============================================================
+
+## Tujuan analisis:
+- Memahami pola penggunaan AI generatif pada mahasiswa.
+- Menganalisis hubungan penggunaan AI dengan performa akademik.
+- Menganalisis hubungan ketergantungan AI dengan retensi pengetahuan.
+- Mengidentifikasi pola risiko burnout dan kesejahteraan mahasiswa.
+- Mengelompokkan mahasiswa berdasarkan intensitas penggunaan AI.
+
+# ============================================================
+# 2. PEMAHAMAN DAN PROFILING DATA
+# ============================================================
+Dataset berisi informasi mahasiswa yang mencakup profil akademik, penggunaan AI generatif, kebiasaan belajar, kebijakan institusi, dan indikator kesejahteraan.Tahap ini dilakukan untuk memahami struktur dataset,tipe data, kelengkapan data, dan kondisi awal data.
+
+```{r}
+# Memanggil package yang digunakan
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(psych)
+library(corrplot)
+library(skimr)
+library(naniar)
+# Import dataset
+data <- read_excel("Ai_student_impact_dataset .xlsx")
+# Melihat dimensi dataset
+dim(data)
+# Melihat nama variabel
+names(data)
+# Melihat struktur data
+str(data)
+# Statistik deskriptif awal
+summary(data)
+# Profiling dataset
+skim(data)
+# Mengecek missing value
+colSums(is.na(data))
+# Mengecek data duplikat
+sum(duplicated(data))
+
+
+```
+## Interpretasi
+- Dataset terdiri dari 50.000 observasi dan 16 variabel.
+- Terdapat 2 missing value, yaitu pada Primary_Use_Case dan Post_Semester_GPA.
+- Ditemukan beberapa nilai yang perlu divalidasi, yaitu GPA dan Tool_Diversity yang berada di luar rentang yang ditentukan.
+- Tidak ditemukan data duplikat.
+
+# ============================================================
+# 3. VALIDASI DAN PEMBERSIHAN DATA
+# ============================================================
+Tahap ini dilakukan untuk memastikan data sesuai dengan rentang, kategori, dan tipe data yang seharusnya sebelum digunakan dalam analisis.
+## ------------------------------------------------------------
+## 3.1 Validasi Missing Value
+## ------------------------------------------------------------
+```{r}
+# Mengecek kembali missing value
+colSums(is.na(data))
+
+# Melihat baris yang memiliki missing value
+data[!complete.cases(data), ]
+
+# Menghapus baris dengan missing value
+data_clean <- data %>%
+  filter(complete.cases(.))
+
+# Mengecek kembali missing value
+colSums(is.na(data_clean))
+
+```
+
+## Interpretasi:
+Ditemukan 2 missing value, yaitu 1 pada Primary_Use_Case dan 1 pada Post_Semester_GPA. Kedua baris dihapus karena jumlahnya sangat kecil dibandingkan keseluruhan dataset. Setelah pembersihan, tidak terdapat missing value.
+
+## ------------------------------------------------------------
+## 3.2 Validasi Year of Study
+## ------------------------------------------------------------
+```{r}
+# Melihat kategori Year_of_Study
+unique(data_clean$Year_of_Study)
+
+# Melihat jumlah setiap kategori
+table(data_clean$Year_of_Study)
+
+# Menghapus kategori Year_of_Study yang tidak valid
+data_clean <- data_clean %>%
+  filter(
+    Year_of_Study %in%
+      c("Freshman", "Sophomore", "Junior", "Senior", "Graduate")
+  )
+
+# Mengecek kembali kategori
+table(data_clean$Year_of_Study)
+```
+
+## Hasil:
+Ditemukan 1 nilai Year_of_Study yang tidak valid, yaitu "123". Nilai tersebut dihapus dari dataset.
+
+## ------------------------------------------------------------
+## 3.3 Validasi GPA
+## ------------------------------------------------------------
+```{r}
+# Mengecek Pre-Semester GPA di luar rentang valid
+data_clean %>%
+  filter(
+    Pre_Semester_GPA < 1.18 |
+      Pre_Semester_GPA > 4
+  )
+# Mengecek Post-Semester GPA di luar rentang valid
+data_clean %>%
+  filter(
+    Post_Semester_GPA < 1 |
+      Post_Semester_GPA > 4
+  )
+# Menghapus nilai GPA yang tidak valid
+data_clean <- data_clean %>%
+  filter(
+    Pre_Semester_GPA >= 1.18,
+    Pre_Semester_GPA <= 4,
+    Post_Semester_GPA >= 1,
+    Post_Semester_GPA <= 4
+  )
+```
+
+# Hasil:
+Ditemukan 1 nilai Pre-Semester GPA dan 1 nilai Post-Semester GPA di luar rentang yang ditentukan. Kedua data tersebut dihapus.
+```{r}
+# Menghapus nilai GPA yang tidak valid
+data_clean <- data_clean %>%
+  filter(
+    Pre_Semester_GPA >= 1.18,
+    Pre_Semester_GPA <= 4,
+    Post_Semester_GPA >= 1,
+    Post_Semester_GPA <= 4
+  )
+
+# Mengecek kembali nilai maksimum GPA
+max(data_clean$Pre_Semester_GPA)
+max(data_clean$Post_Semester_GPA)
+
+# Mengecek ukuran dataset
+dim(data_clean)
+```
+## ------------------------------------------------------------
+## 3.4 Validasi Tool Diversity
+## ------------------------------------------------------------
+```{r}
+# Mengecek nilai Tool_Diversity di luar rentang valid
+data_clean %>%
+  filter(
+    Tool_Diversity < 1 |
+      Tool_Diversity > 5
+  )
+# Menghapus nilai Tool_Diversity yang tidak valid
+data_clean <- data_clean %>%
+  filter(
+    Tool_Diversity >= 1,
+    Tool_Diversity <= 5
+  )
+```
+## Hasil:
+Ditemukan 1 nilai Tool_Diversity di luar rentang 1–5. Nilai tersebut dihapus dari dataset.
+
+## ------------------------------------------------------------
+## 3.5 Validasi Variabel Numerik
+## ------------------------------------------------------------
+```{r}
+summary(data_clean %>%
+          select(
+            Weekly_GenAI_Hours,
+            Traditional_Study_Hours,
+            Perceived_AI_Dependency,
+            Anxiety_Level_During_Exams,
+            Skill_Retention_Score
+          ))
+```
+## Hasil:
+Seluruh variabel numerik berada dalam rentang yang ditentukan. Tidak ditemukan nilai yang perlu dihapus.
+
+## ------------------------------------------------------------
+## 3.6 Validasi Variabel Kategorik
+## ------------------------------------------------------------
+```{r}
+table(data_clean$Major_Category)
+table(data_clean$Primary_Use_Case)
+table(data_clean$Prompt_Engineering_Skill)
+table(data_clean$Institutional_Policy)
+table(data_clean$Burnout_Risk_Level)
+```
+## Hasil:
+Seluruh kategori pada variabel kategorik sesuai dengan kategori yang ditentukan dan tidak ditemukan nilai tidak valid.
+
+## ------------------------------------------------------------
+## 3.7 Penyesuaian Tipe Data
+## ------------------------------------------------------------
+```{r}
+data_clean$Student_ID <- as.character(data_clean$Student_ID)
+data_clean$Major_Category <- as.factor(data_clean$Major_Category)
+data_clean$Year_of_Study <- as.factor(data_clean$Year_of_Study)
+data_clean$Primary_Use_Case <- as.factor(data_clean$Primary_Use_Case)
+data_clean$Prompt_Engineering_Skill <- as.factor(data_clean$Prompt_Engineering_Skill)
+data_clean$Paid_Subscription <- as.factor(data_clean$Paid_Subscription)
+data_clean$Institutional_Policy <- as.factor(data_clean$Institutional_Policy)
+data_clean$Burnout_Risk_Level <- as.factor(data_clean$Burnout_Risk_Level)
+# Mengecek kembali struktur data
+str(data_clean)
+```
+## Hasil:
+Tipe data telah disesuaikan untuk kebutuhan analisis. Dataset bersih terdiri dari 49.996 observasi dan 16 variabel.
+
+
+## ------------------------------------------------------------
+## 3.8 Pemeriksaan Akhir Dataset
+## ------------------------------------------------------------
+```{r}
+# Mengecek missing value
+colSums(is.na(data_clean))
+
+# Mengecek duplikat
+sum(duplicated(data_clean))
+
+# Melihat ukuran dataset
+dim(data_clean)
+```
+## Hasil:
+Dataset telah melalui proses validasi dan pembersihan. Tidak terdapat missing value maupun data duplikat. Dataset siap digunakan untuk tahap analisis berikutnya.
+
+# ============================================================
+# 4. EXPLORATORY DATA ANALYSIS
+# ============================================================
+EDA dilakukan untuk melihat pola, distribusi, dan hubungan antarvariabel yang berkaitan dengan penggunaan AI, performa akademik, serta kesejahteraan mahasiswa.
+
+```{r}
+library(tidyr)
+
+gpa_long <- data_clean %>%
+  select(Pre_Semester_GPA, Post_Semester_GPA) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "Semester",
+    values_to = "GPA"
+  )
+
+ggplot(gpa_long, aes(x = Semester, y = GPA)) +
+  geom_boxplot() +
+  labs(
+    title = "Perbandingan GPA Sebelum dan Sesudah Semester",
+    x = "",
+    y = "GPA"
+  ) +
+  theme_minimal()
+```
+## ------------------------------------------------------------
+## 4.2 Hubungan Penggunaan AI dengan Post-Semester GPA
+## ------------------------------------------------------------
+```{r}
+ggplot(
+  data_clean,
+  aes(x = Weekly_GenAI_Hours, y = Post_Semester_GPA)
+) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(
+    title = "Hubungan Intensitas Penggunaan AI dengan Post-Semester GPA",
+    x = "Jam Penggunaan GenAI per Minggu",
+    y = "Post-Semester GPA"
+  ) +
+  theme_minimal()
+```
+# Hasil:
+Terdapat kecenderungan hubungan negatif yang lemah antara intensitas penggunaan GenAI dan Post-Semester GPA.Hubungan ini belum menunjukkan bahwa penggunaan AI secara langsung menyebabkan penurunan GPA.
+
+## ------------------------------------------------------------
+## 4.3 Hubungan Intensitas Penggunaan AI dengan Skill Retention
+##------------------------------------------------------------
+```{r}
+ggplot(
+  data_clean,
+  aes(
+    x = Weekly_GenAI_Hours,
+    y = Skill_Retention_Score
+  )
+) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(
+    method = "lm",
+    se = TRUE
+  ) +
+  labs(
+    title = "Hubungan Intensitas Penggunaan AI dengan Skill Retention",
+    x = "Jam Penggunaan GenAI per Minggu",
+    y = "Skill Retention Score"
+  ) +
+  theme_minimal()
+```
+## Hasil:
+Terdapat kecenderungan negatif antara intensitas penggunaan GenAI dengan Skill Retention Score. Semakin tinggi jam penggunaan GenAI, skor retensi pengetahuan cenderung menurun.Namun, sebaran data cukup luas sehingga hubungan ini tidak dapat diartikan sebagai hubungan sebab-akibat.
+
+## ------------------------------------------------------------
+## 4.4 Burnout Risk berdasarkan Kebijakan Institusi
+## ------------------------------------------------------------
+
+```{r}
+ggplot(data_clean, aes(x = Institutional_Policy, fill = Burnout_Risk_Level)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Distribusi Risiko Burnout berdasarkan Kebijakan Institusi",
+    x = "Kebijakan Institusi",
+    y = "Proporsi Mahasiswa",
+    fill = "Risiko Burnout"
+  ) +
+  theme_minimal()
+```
+## Hasil:
+Kebijakan Strict_Ban menunjukkan proporsi High Burnout yang lebih tinggi dibandingkan kebijakan lainnya, sedangkan proporsi Low Burnout lebih rendah.
+Pola ini menunjukkan adanya perbedaan profil risiko burnout berdasarkan kebijakan institusi.
+
+## ------------------------------------------------------------
+## 4.5 Pola Penggunaan AI berdasarkan Jenjang Studi
+## ------------------------------------------------------------
+```{r}
+ggplot(data_clean, aes(x = Year_of_Study, y = Weekly_GenAI_Hours)) +
+  geom_boxplot() +
+  labs(
+    title = "Distribusi Intensitas Penggunaan AI berdasarkan Jenjang Studi",
+    x = "Jenjang Studi",
+    y = "Jam Penggunaan GenAI per Minggu"
+  ) +
+  theme_minimal()
+```
+## Hasil:
+Intensitas penggunaan AI antarjenjang studi memiliki pola yang relatif mirip. Median penggunaan berada di sekitar 6 jam per minggu, dengan variasi penggunaan yang cukup lebar pada setiap jenjang.
+
+## ------------------------------------------------------------
+# 4.6 Korelasi antar Variabel Numerik
+## ------------------------------------------------------------
+```{r}
+library(corrplot)
+
+data_numeric <- data_clean %>%
+  select(
+    Pre_Semester_GPA,
+    Weekly_GenAI_Hours,
+    Tool_Diversity,
+    Traditional_Study_Hours,
+    Perceived_AI_Dependency,
+    Anxiety_Level_During_Exams,
+    Post_Semester_GPA,
+    Skill_Retention_Score)
+cor_matrix <- cor(data_numeric, use = "complete.obs")
+corrplot(
+  cor_matrix,
+  method = "color",
+  type = "upper",
+  tl.col = "black",
+  tl.srt = 45)
+```
+## Hasil:
+Heatmap menunjukkan adanya hubungan antar beberapa variabel numerik. Pre-Semester GPA memiliki hubungan positif yang kuat dengan Post-Semester GPA.
+Intensitas penggunaan AI cenderung berkaitan positif dengan ketergantungan AI dan negatif dengan retensi pengetahuan.
+
+## ------------------------------------------------------------
+## 4.7 Segmentasi Intensitas Penggunaan AI
+## ------------------------------------------------------------
+```{r}
+data_clean <- data_clean %>%
+  mutate(
+    AI_Usage_Segment = case_when(
+      Weekly_GenAI_Hours <= 5 ~ "Light User",
+      Weekly_GenAI_Hours <= 15 ~ "Moderate User",
+      Weekly_GenAI_Hours > 15 ~ "Heavy User"
+    )
+  )# Melihat jumlah mahasiswa setiap segmen
+table(data_clean$AI_Usage_Segment)
+ggplot(data_clean, aes(x = AI_Usage_Segment)) +
+  geom_bar() +
+  labs(
+    title = "Segmentasi Mahasiswa berdasarkan Intensitas Penggunaan AI",
+    x = "Segmen Penggunaan AI",
+    y = "Jumlah Mahasiswa"
+  ) +
+  theme_minimal()
+```
+## Hasil:
+Mayoritas mahasiswa termasuk dalam kategori Light User, diikuti Moderate User dan Heavy User. Segmentasi ini digunakan untuk membandingkan performa akademik, retensi pengetahuan, dan risiko burnout berdasarkan intensitas penggunaan AI.
+
+# ============================================================
+# 5. Statistical Analysis
+# ============================================================
+
+```{r}
+## Korelasi penggunaan AI dengan Post-Semester GPA
+cor.test(
+  data_clean$Weekly_GenAI_Hours,
+  data_clean$Post_Semester_GPA,
+  method = "pearson"
+)
+
+# Korelasi penggunaan AI dengan Skill Retention
+cor.test(
+  data_clean$Weekly_GenAI_Hours,
+  data_clean$Skill_Retention_Score,
+  method = "pearson"
+)
+
+# Korelasi ketergantungan AI dengan Skill Retention
+cor.test(
+  data_clean$Perceived_AI_Dependency,
+  data_clean$Skill_Retention_Score,
+  method = "pearson"
+)
+```
+## Hasil analisis korelasi:
+1. Weekly_GenAI_Hours dengan Post_Semester_GPA: terdapat korelasi negatif yang sangat lemah (r = -0.019; p < 0.001). Artinya, peningkatan penggunaan AI berhubungan dengan sedikit penurunan GPA, tetapi hubungan tersebut sangat lemah.
+
+2. Weekly_GenAI_Hours dengan Skill_Retention_Score: terdapat korelasi negatif lemah (r = -0.118; p < 0.001). Artinya, semakin tinggi penggunaan AI, skor retensi keterampilan cenderung menurun.
+
+3. Perceived_AI_Dependency dengan Skill_Retention_Score: terdapat korelasi negatif lemah (r = -0.084; p < 0.001). Artinya, semakin tinggi ketergantungan terhadap AI, retensi keterampilan cenderung menurun.
+
+## Kesimpulan:
+Penggunaan dan ketergantungan AI memiliki hubungan negatif dengan retensi keterampilan. Namun, korelasi tidak menunjukkan hubungan sebab-akibat.
+
+# ============================================================
+# 6. Student Segmentation
+# ============================================================
+```{r}
+segment_summary <- data_clean %>%
+  group_by(AI_Usage_Segment) %>%
+  summarise(
+    Jumlah_Mahasiswa = n(),
+    Rata_rata_GPA = mean(Post_Semester_GPA, na.rm = TRUE),
+    Rata_rata_Retention = mean(Skill_Retention_Score, na.rm = TRUE),
+    Persentase_High_Burnout = mean(Burnout_Risk_Level == "High") * 100
+  )
+
+segment_summary
+
+ggplot(
+  data_clean,
+  aes(x = AI_Usage_Segment, y = Post_Semester_GPA)
+) +
+  geom_boxplot() +
+  labs(
+    title = "Post-Semester GPA berdasarkan Segmen Penggunaan AI",
+    x = "Segmen Penggunaan AI",
+    y = "Post-Semester GPA"
+  ) +
+  theme_minimal()
+ggplot(
+  data_clean,
+  aes(x = AI_Usage_Segment, fill = Burnout_Risk_Level)
+) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Risiko Burnout berdasarkan Segmen Penggunaan AI",
+    x = "Segmen Penggunaan AI",
+    y = "Proporsi Mahasiswa",
+    fill = "Burnout Risk"
+  ) +
+  theme_minimal()
+```
+## Hasil segmentasi:
+- Heavy User memiliki distribusi High Burnout paling tinggi dibandingkan Light User dan Moderate User.
+- Light User memiliki proporsi High Burnout paling rendah.
+- Distribusi Post-Semester GPA antar segmen relatif mirip, sehingga perbedaan intensitas penggunaan AI tidak menunjukkan perbedaan GPA yang besar.
+
+# ------------------------------------------------------------
+# 7. Data-Driven Insights
+# ------------------------------------------------------------
+##Temuan:
+- Penggunaan AI berkorelasi negatif dengan GPA dan Skill Retention.
+- Ketergantungan AI berkorelasi negatif dengan Skill Retention.
+- Heavy User memiliki risiko High Burnout paling tinggi.
+- Perbedaan GPA antar segmen penggunaan AI relatif kecil.
+
+## Kesimpulan:
+Penggunaan AI yang tinggi lebih terlihat berkaitan dengan risiko burnout dan penurunan retensi keterampilan dibandingkan dengan perbedaan GPA.Hasil ini dapat menjadi dasar untuk mendorong penggunaan AI yang lebih terkontrol dan mendukung kebiasaan belajar yang tetap mempertahankan keterampilan mahasiswa.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
