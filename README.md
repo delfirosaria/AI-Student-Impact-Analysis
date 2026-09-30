@@ -31,6 +31,7 @@ Project ini mencakup:
 - `Ai_student_impact_dataset .xlsx` — dataset yang digunakan.
 ## Full Analysis
 Laporan lengkap analisis dapat dilihat pada:
+- [View Full Analysis on RPubs](https://rpubs.com/delfiirrs_/ai-student-impact-analysis)
 - [R Markdown Source](./AI-Student-Impact-Analysis.Rmd)
 - [HTML Report](./AI-Student-Impact-Analysis.html)
 ## Conclusion
